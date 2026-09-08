@@ -1,6 +1,9 @@
 from pathlib import Path
 import torch
 
+DEVICE = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
 
 # ============================================================
 # PROJECT PATHS
@@ -53,7 +56,7 @@ SENSOR_CHANNELS = [
 
 NUM_CHANNELS = 6
 
-WINDOW_SIZE = 60
+WINDOW_SIZE = 150
 
 LABEL_COLUMN = "standard activity code"
 
