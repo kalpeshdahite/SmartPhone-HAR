@@ -12,7 +12,7 @@ The project is being developed as a reproducible benchmark for supervised and se
 
 ### Phase 1 — Foundation, Dataset Pipeline & Supervised Baseline
 
-**Status: 🟡 Nearly Complete**
+**Status: ✅ Completed Building**
 
 The complete data and training pipeline has been implemented and successfully tested on GPU.
 
@@ -31,10 +31,10 @@ The complete data and training pipeline has been implemented and successfully te
 | Forward/backward GPU test | ✅ |
 | Supervised training pipeline | ✅ |
 | 5-epoch smoke test | ✅ |
-| Baseline evaluation | ⏳ |
-| Confusion matrix | ⏳ |
-| Learning curves | ⏳ |
-| Final 50-epoch baseline | ⏳ |
+| Baseline evaluation | ✅ |
+| Confusion matrix | ✅ |
+| Learning curves | ✅ |
+| Final 50-epoch baseline | ✅ |
 
 The 5-epoch run was a successful **pipeline smoke test**. The final Phase 1 baseline should be run for the configured full training schedule before Phase 1 is marked complete.
 
