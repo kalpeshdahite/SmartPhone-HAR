@@ -716,7 +716,7 @@ Follow these steps to set up the project on another laptop.
 Open Git Bash or a terminal:
 
 ```bash
-git clone <[text](https://github.com/kalpeshdahite/SmartPhone-HAR)>
+git clone <https://github.com/kalpeshdahite/SmartPhone-HAR>
 cd Smartphone-HAR
 ```
 
