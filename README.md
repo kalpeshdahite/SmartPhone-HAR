@@ -704,3 +704,258 @@ Once the remaining items are completed, **Phase 1 is officially complete** and d
 #### Training & Validation Accuracy
 
 ![Accuracy Curve](results/learning_curves/resnet_se5_uci_accuracy.png)
+
+
+
+## Setup & Run
+
+Follow these steps to set up the project on another laptop.
+
+### 1. Clone the repository
+
+Open Git Bash or a terminal:
+
+```bash
+git clone <[text](https://github.com/kalpeshdahite/SmartPhone-HAR)>
+cd Smartphone-HAR
+```
+
+### 2. Create a virtual environment
+
+```bash
+python -m venv .venv
+```
+
+Activate it on Windows using Git Bash:
+
+```bash
+source .venv/Scripts/activate
+```
+
+For Windows Command Prompt:
+
+```cmd
+.venv\Scripts\activate
+```
+
+For PowerShell:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+### 3. Install the required libraries
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### 4. Install PyTorch
+
+For GPU training, install the appropriate CUDA-enabled PyTorch version for the computer.
+
+Verify the installation:
+
+```bash
+python -c "import torch; print('PyTorch:', torch.__version__); print('CUDA available:', torch.cuda.is_available()); print('GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+```
+
+If CUDA is available, the output should show:
+
+```text
+CUDA available: True
+GPU: <NVIDIA GPU name>
+```
+
+The project automatically uses CUDA when available and falls back to CPU otherwise.
+
+### 5. Dataset setup
+
+Place the DAGHAR standardized UCI dataset in:
+
+```text
+data/processed/daghar/standardized_view/UCI/
+```
+
+The required files are:
+
+```text
+train.csv
+validation.csv
+test.csv
+```
+
+The expected structure is:
+
+```text
+Smartphone-HAR/
+└── data/
+    └── processed/
+        └── daghar/
+            └── standardized_view/
+                └── UCI/
+                    ├── train.csv
+                    ├── validation.csv
+                    └── test.csv
+```
+
+### 6. Verify the dataset
+
+Run:
+
+```bash
+python scripts/inspect_dataset.py
+```
+
+Then verify the DataLoader:
+
+```bash
+python scripts/test_dataloader.py
+```
+
+Expected batch format:
+
+```text
+X shape: torch.Size([64, 6, 150])
+y shape: torch.Size([64])
+```
+
+### 7. Test the model
+
+Run:
+
+```bash
+python scripts/test_model.py
+```
+
+This verifies the ResNet-SE-5 forward pass, loss calculation and backward pass.
+
+### 8. Train the supervised baseline
+
+Open:
+
+```text
+config.py
+```
+
+Set the desired number of epochs:
+
+```python
+NUM_EPOCHS = 50
+```
+
+Then run:
+
+```bash
+python scripts/run_supervised.py
+```
+
+The trained model will be saved in:
+
+```text
+results/models/
+```
+
+and training metrics will be saved in:
+
+```text
+results/metrics/
+```
+
+### 9. Evaluate the trained model
+
+After training:
+
+```bash
+python scripts/evaluate_baseline.py
+```
+
+This generates the classification metrics and confusion matrix.
+
+Results are saved under:
+
+```text
+results/
+├── metrics/
+└── confusion_matrices/
+```
+
+### 10. Generate learning curves
+
+Run:
+
+```bash
+python scripts/plot_learning_curves.py
+```
+
+The generated plots are stored in:
+
+```text
+results/learning_curves/
+```
+
+### Quick Start
+
+Once the repository and dataset are available, the basic workflow is:
+
+```bash
+git clone <YOUR_GITHUB_REPOSITORY_URL>
+cd Smartphone-HAR
+
+python -m venv .venv
+source .venv/Scripts/activate
+
+python -m pip install -r requirements.txt
+
+python scripts/inspect_dataset.py
+python scripts/test_dataloader.py
+python scripts/test_model.py
+
+python scripts/run_supervised.py
+
+python scripts/evaluate_baseline.py
+python scripts/plot_learning_curves.py
+```
+
+### GPU Not Available?
+
+The project can also run on CPU because the device is selected automatically:
+
+```python
+DEVICE = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+```
+
+However, GPU acceleration is recommended for training, especially for the later self-supervised learning experiments.
+
+### Troubleshooting
+
+If `pip` gives an error, use:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+instead of:
+
+```bash
+pip install -r requirements.txt
+```
+
+If CUDA is not detected:
+
+```bash
+python -c "import torch; print(torch.cuda.is_available())"
+```
+
+If the dataset cannot be found, verify that these files exist:
+
+```text
+data/processed/daghar/standardized_view/UCI/train.csv
+data/processed/daghar/standardized_view/UCI/validation.csv
+data/processed/daghar/standardized_view/UCI/test.csv
+```
+
+Do not commit the dataset, virtual environment, or large model checkpoints to GitHub.
