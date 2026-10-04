@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phone sensor streamer</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:16px;background:#fff;color:#111}
+button{font-size:1.3rem;padding:14px 22px;margin:6px 8px 6px 0}
+pre{font-size:1rem;line-height:1.5;white-space:pre-wrap}
+</style></head><body>
+<h2>Phone sensor streamer</h2>
+<button id="start">Start</button><button id="stop">Stop</button>
+<pre id="out">idle</pre>
+<script>
+const out = document.getElementById('out');
+let acc, gyr, timer, wake, running = false, first = true, n = 0, t0 = 0;
+let lastG = [0, 0, 0], buf = [];
+
+function flush() {
+  if (!buf.length) return;
+  const batch = buf; buf = [];
+  fetch('/ingest', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({reset: first, samples: batch})
+  }).then(r => r.json()).then(s => {
+    const r = n / ((performance.now() - t0) / 1000);
+    const f = v => v.map(x => x.toFixed(2)).join(', ');
+    const last = batch[batch.length - 1];
+    out.textContent =
+      'streaming: ' + r.toFixed(1) + ' Hz, ' + n + ' samples\n' +
+      'RAW accel m/s2: ' + f(last.acc) + '\n' +
+      'RAW gyro rad/s: ' + f(last.gyro) + '\n\n' +
+      'prediction: ' + (s.activity || 'collecting...') +
+      (s.confidence != null ? ' (' + (s.confidence * 100).toFixed(0) + '%)' : '');
+  }).catch(e => { out.textContent = 'send failed: ' + e; });
+  first = false;
+}
+
+async function start() {
+  if (running) return;
+  if (!window.isSecureContext) {
+    out.textContent = 'Not a secure context: sensors are blocked. Set the Chrome flag for this address (see instructions).';
+    return;
+  }
+  try {
+    acc = new Accelerometer({frequency: 50});
+    gyr = new Gyroscope({frequency: 50});
+  } catch (e) { out.textContent = 'Sensor API error: ' + e; return; }
+  gyr.onreading = () => { lastG = [gyr.x, gyr.y, gyr.z]; };
+  acc.onreading = () => {
+    buf.push({t: acc.timestamp, acc: [acc.x, acc.y, acc.z], gyro: lastG.slice()});
+    n++;
+  };
+  acc.onerror = gyr.onerror = e => { out.textContent = 'Sensor error: ' + e.error.name + ' (allow Motion sensors in Chrome site settings)'; };
+  n = 0; first = true; buf = []; t0 = performance.now();
+  acc.start(); gyr.start();
+  timer = setInterval(flush, 200);
+  try { wake = await navigator.wakeLock.request('screen'); } catch (e) {}
+  running = true; out.textContent = 'starting...';
+}
+
+function stop() {
+  if (!running) return;
+  clearInterval(timer);
+  acc.stop(); gyr.stop();
+  if (wake) wake.release();
+  running = false; out.textContent = 'stopped';
+}
+
+document.getElementById('start').onclick = start;
+document.getElementById('stop').onclick = stop;
+</script></body></html>
