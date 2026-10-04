@@ -1,0 +1,53 @@
+{
+  "name": "rf_uci_frac100_seed42",
+  "model": "RandomForest",
+  "label_fraction": 1.0,
+  "seed": 42,
+  "n_train_windows": 2420,
+  "val_acc": 0.8529411764705882,
+  "train_time_s": 0.5110436999993908,
+  "inference_ms_per_window": 0.11146608695671076,
+  "test": {
+    "accuracy": 0.8898550724637682,
+    "precision_macro": 0.8921227099438044,
+    "recall_macro": 0.8898550724637679,
+    "f1_macro": 0.8901294397726689,
+    "confusion_matrix": [
+      [
+        133,
+        5,
+        0,
+        0,
+        0
+      ],
+      [
+        16,
+        122,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        112,
+        23,
+        3
+      ],
+      [
+        0,
+        0,
+        19,
+        117,
+        2
+      ],
+      [
+        0,
+        0,
+        1,
+        7,
+        130
+      ]
+    ]
+  }
+}
