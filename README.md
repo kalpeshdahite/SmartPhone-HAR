@@ -4,6 +4,8 @@ A final-year project that recognises human activity from raw smartphone accelero
 
 Based on the benchmark idea in *"Benchmarking Encoders and Self-Supervised Learning for Smartphone-Based Human Activity Recognition"*, using the DAGHAR standardized UCI HAR data.
 
+Documentation page: `docs/index.html` (deployable with GitHub Pages).
+
 ## Project status
 
 | Part | Status |
@@ -11,8 +13,8 @@ Based on the benchmark idea in *"Benchmarking Encoders and Self-Supervised Learn
 | Dataset pipeline (load, normalize, label-fraction subsets) | Done, verified |
 | Random Forest and 1D CNN baselines | Done, results below |
 | SimCLR pretraining + label-efficiency study (3 seeds) | Done, results below |
-| Live server, dashboard, replay test | Code written; replay verification result: **TBD** |
-| Real phone streaming (phone in trouser pocket) | In progress |
+| Live server, dashboard, replay test | Done. Replay accuracy 0.9391 on 690 test windows, identical to offline 0.9391 (0 missing) |
+| Real phone streaming (Android, phone held in hand) | In progress |
 | Second dataset, more encoders, statistical tests | Future work |
 
 ## Pipeline
@@ -80,6 +82,7 @@ live/
   live_preprocess.py          phone->dataset conversion, resampling, prediction
   server.py                   Flask server (/ingest, /state, dashboard)
   dashboard.html              live display
+  phone_sensors.html          Android Chrome page that streams sensors to the server
   replay_test.py              streams real test windows into the server
 results/                      metrics, confusion matrices, curves, tables, figures
 checkpoints/                  saved models (not committed)
@@ -109,18 +112,18 @@ The phone streams timestamped accel and gyro samples to the server over the loca
 
 **The replay test** streams real test windows through the same server. Its accuracy should match the offline accuracy; this proves the live path is consistent with training. It is a simulation, not a phone result.
 
-**Phone placement for this version: trouser pocket.** The training data was recorded with a waist-mounted phone, so expect a domain shift. Pocket orientation also changes how gravity falls on the axes, so the axis and unit mapping in `live/live_preprocess.py` are guesses that must be calibrated on the real phone. Keep the phone in a fixed orientation during demos. Sitting vs standing is expected to be the least reliable pair.
+**Phone placement for this version: held in hand (Android, Chrome sensor API via `live/phone_sensors.html`).** The training data was recorded with a waist-mounted phone, so expect a domain shift: a hand-held phone swings with the arm and is held at varying angles. The axis and unit mapping in `live/live_preprocess.py` must be calibrated on the real phone. Hold it in one fixed pose during demos. Sitting vs standing is expected to be the least reliable pair.
 
 ## Limitations
 
 - One dataset, 5 classes, waist-mounted phone.
 - Sampling rate and class names to be confirmed against dataset documentation.
 - SSL evidence is limited (one pretraining run, 3 fine-tuning seeds).
-- Live accuracy on a real phone in a pocket has not yet been measured.
+- Live accuracy on a real hand-held phone has not yet been measured.
 
 ## Future work
 
-Dynamic placement (hand, bag, different pockets), a second dataset (e.g. WISDM or MotionSense for running), more SSL methods and encoders, 10+ seeds with statistical tests, and a small own-recorded fine-tuning set.
+Other placements (pocket, bag, wrist-worn), a second dataset (e.g. WISDM or MotionSense for running), more SSL methods and encoders, 10+ seeds with statistical tests, and a small own-recorded fine-tuning set.
 
 ## References
 
