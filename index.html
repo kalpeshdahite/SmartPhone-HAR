@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smartphone-HAR: how it works</title>
+<meta name="description" content="Recognising human activity from raw smartphone sensors with self-supervised learning, from data to a live demo.">
+<meta property="og:title" content="Smartphone-HAR: how it works">
+<meta property="og:description" content="A plain-language walkthrough of our human activity recognition project: data, models, results and the live prototype.">
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6f7;--panel:#fff;--ink:#12303a;--mute:#566b72;--line:#d3dde0;--a:#0b7a75;--b:#c8641b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1c20;--panel:#16272c;--ink:#e6eff1;--mute:#9db1b7;--line:#2a3f45;--a:#46c2ba;--b:#f0a05f}}
+:root[data-theme="dark"]{--bg:#0f1c20;--panel:#16272c;--ink:#e6eff1;--mute:#9db1b7;--line:#2a3f45;--a:#46c2ba;--b:#f0a05f}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.65 "Source Serif 4",Georgia,serif}
+h1,h2,h3,nav,th,.tag{font-family:"Space Grotesk",system-ui,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:0 20px}
+nav{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);border-bottom:1px solid var(--line);z-index:5;font-size:.9rem}
+nav .wrap{display:flex;gap:18px;overflow-x:auto;padding-top:10px;padding-bottom:10px;white-space:nowrap;align-items:center}
+nav a{color:var(--mute);text-decoration:none}nav a:hover,nav a:focus-visible{color:var(--a)}
+nav button{margin-left:auto;background:none;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:3px 10px;cursor:pointer;font:inherit}
+:focus-visible{outline:2px solid var(--b);outline-offset:2px}
+header{padding:56px 0 24px}
+h1{font-size:clamp(2.1rem,6vw,3.4rem);line-height:1.08;margin:0 0 14px;letter-spacing:-.02em}
+.lead{font-size:1.15rem;color:var(--mute);max-width:62ch;margin:0}
+#sig{width:100%;height:150px;margin-top:26px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+section{padding:34px 0;border-bottom:1px solid var(--line)}
+h2{font-size:1.7rem;margin:0 0 10px;letter-spacing:-.01em}
+h3{font-size:1.15rem;margin:22px 0 4px}
+p{margin:.5em 0;max-width:68ch}
+code{font:.85em ui-monospace,Consolas,monospace;background:var(--panel);border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+.tag{display:inline-block;font-size:.8rem;border:1px solid var(--a);color:var(--a);border-radius:99px;padding:1px 10px;margin-right:6px}
+.tag.todo{border-color:var(--b);color:var(--b)}
+.phase{border-left:3px solid var(--a);padding:2px 0 2px 18px;margin:26px 0}
+.phase dl{margin:8px 0 0}.phase dt{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:.9rem;margin-top:8px}
+.phase dd{margin:0;max-width:66ch}
+.table{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;width:100%;min-width:480px;font-size:.95rem}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:500}
+.num{font-variant-numeric:tabular-nums}
+.bars{margin:14px 0}.brow{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center;margin:6px 0;font-size:.9rem}
+.track{background:var(--panel);border:1px solid var(--line);height:20px;position:relative;border-radius:4px;overflow:hidden}
+.fill{height:100%;display:flex;align-items:center;padding-left:8px;font-size:.75rem;color:#fff;font-family:sans-serif;white-space:nowrap}
+.note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--b);padding:10px 14px;border-radius:4px;margin:14px 0;max-width:68ch}
+pre{background:var(--panel);border:1px solid var(--line);padding:14px;border-radius:6px;overflow-x:auto;font:.82rem/1.5 ui-monospace,Consolas,monospace}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:"Space Grotesk",sans-serif;font-size:.85rem;margin:14px 0}
+.flow span{background:var(--panel);border:1px solid var(--line);padding:4px 10px;border-radius:6px}.flow i{color:var(--mute);font-style:normal}
+#ideas dt{font-family:"Space Grotesk",sans-serif;font-weight:700;margin-top:14px}#ideas dd{margin:0;max-width:66ch}
+footer{padding:28px 0 48px;color:var(--mute);font-size:.9rem}
+</style></head><body>
+<nav><div class="wrap">
+<a href="#overview">Overview</a><a href="#ideas">Key ideas</a><a href="#data">Data</a><a href="#phases">Phases</a><a href="#results">Results</a><a href="#files">Files</a><a href="#live">Live demo</a><a href="#limits">Limits</a>
+<a href="https://github.com/kalpeshdahite/SmartPhone-HAR">GitHub</a>
+<button id="theme" type="button" aria-label="Toggle theme">Theme</button></div></nav>
+
+<header><div class="wrap">
+<h1>Can a phone's motion sensors tell what you are doing?</h1>
+<p class="lead">Smartphone-HAR recognises activities such as walking, sitting and climbing stairs from raw accelerometer and gyroscope signals, tests whether self-supervised learning helps when labelled data is scarce, and runs the model on a live sensor stream.</p>
+<svg id="sig" viewBox="0 0 800 150" preserveAspectRatio="none" role="img" aria-label="Illustration of six sensor channels: three accelerometer and three gyroscope traces"></svg>
+</div></header>
+
+<main class="wrap">
+<section id="overview">
+<h2>The project in one minute</h2>
+<p>A smartphone records how it moves: three accelerometer axes (acceleration, including gravity) and three gyroscope axes (rotation). Each activity leaves a different pattern in those six signals. We cut the stream into 3-second windows and train a neural network to name the activity.</p>
+<div class="flow"><span>Raw sensors</span><i>&rarr;</i><span>150-sample windows</span><i>&rarr;</i><span>Normalize</span><i>&rarr;</i><span>Self-supervised pretraining</span><i>&rarr;</i><span>Classifier</span><i>&rarr;</i><span>Activity + confidence</span></div>
+<p><b>Research question:</b> can learning from unlabelled sensor data improve recognition when only a few labelled windows exist?</p>
+<p><b>Short answer so far:</b> not at 5% to 100% labels, and possibly yes at 1% labels. The evidence at 1% is suggestive, not conclusive.</p>
+<p><span class="tag">Done</span>offline pipeline and experiments <span class="tag todo">In progress</span>real phone held in the hand</p>
+</section>
+
+<section id="ideas">
+<h2>Key ideas in plain words</h2>
+<dl>
+<dt>Window</dt><dd>A short slice of the sensor stream, 150 readings (about 3 seconds). The model classifies one window at a time.</dd>
+<dt>Normalization</dt><dd>Rescaling each sensor channel so values are comparable. We compute the scaling from training data only, so the test data stays unseen.</dd>
+<dt>1D CNN</dt><dd>A neural network that slides small filters along the time axis to spot patterns such as the rhythm of steps.</dd>
+<dt>Self-supervised learning</dt><dd>Teaching the network from data without labels. We show it two slightly distorted copies of the same window and train it to recognise they match, so it learns what makes a window distinctive.</dd>
+<dt>Label efficiency</dt><dd>How well a method works when only a few windows have activity labels. This is where self-supervised learning is supposed to help.</dd>
+<dt>Domain shift</dt><dd>When data at test time looks different from training data, for example a phone held in the hand instead of worn at the waist. It is the main risk for our live demo.</dd>
+</dl></section>
+
+<section id="data">
+<h2>The data</h2>
+<p>We use the UCI HAR dataset in the standardized DAGHAR format. Each sample is a window of <b>6 channels x 150 time steps</b>. There are 2420 training, 340 validation and 690 test windows across 5 balanced classes.</p>
+<ul>
+<li><b>Subject-independent split.</b> 21 users train, 3 validate, 6 test, and no user appears in two splits (we checked). The test measures performance on people the model never saw.</li>
+<li><b>Classes:</b> sitting, standing, walking, upstairs, downstairs. The names are inferred from the original UCI numbering and the signal statistics, and need confirming against the DAGHAR documentation.</li>
+<li><b>Not available:</b> running. This dataset has no running class.</li>
+<li><b>Units:</b> accelerometer looks like g with gravity mostly on x, gyroscope like rad/s. The 50 Hz sampling rate is an assumption we still have to verify.</li>
+</ul>
+</section>
+
+<section id="phases"><h2>What we did, phase by phase</h2><div id="phaselist"></div></section>
+
+<section id="results">
+<h2>Results</h2>
+<p>All numbers below come from actual runs on the held-out test users.</p>
+<h3>Baselines (seed 42, all labels)</h3>
+<div class="table"><table><tr><th>Model</th><th>Accuracy</th><th>Macro F1</th><th>Parameters</th><th>Inference per window</th></tr>
+<tr><td>Random Forest, 64 handcrafted features</td><td class="num">0.8899</td><td class="num">0.8901</td><td>n/a</td><td class="num">0.1115 ms (CPU)</td></tr>
+<tr><td>1D CNN on raw windows</td><td class="num">0.9362</td><td class="num">0.9351</td><td class="num">37,093</td><td class="num">0.0109 ms (GPU, batched)</td></tr></table></div>
+<p>The CNN's main mistake is sitting versus standing: 40 of 138 standing windows were called sitting. The two differ only by a small shift in the gravity direction, and users hold the phone at slightly different angles.</p>
+<h3>Does self-supervised pretraining help? Test accuracy, mean of 3 seeds</h3>
+<div class="bars" id="bars" aria-label="Accuracy versus label percentage for CNN from scratch and SSL plus CNN"></div>
+<div class="table"><table><tr><th>Labels used</th><th>CNN from scratch</th><th>SSL + CNN</th></tr>
+<tr><td>100% (2420 windows)</td><td class="num">0.934 &plusmn; 0.003</td><td class="num">0.922 &plusmn; 0.015</td></tr>
+<tr><td>10% (240)</td><td class="num">0.926 &plusmn; 0.018</td><td class="num">0.913 &plusmn; 0.013</td></tr>
+<tr><td>5% (120)</td><td class="num">0.927 &plusmn; 0.021</td><td class="num">0.914 &plusmn; 0.009</td></tr>
+<tr><td>1% (25)</td><td class="num">0.760 &plusmn; 0.044</td><td class="num">0.802 &plusmn; 0.032</td></tr></table></div>
+<div class="note"><b>Honest reading.</b> This task is easy enough that a plain CNN already reaches about 93% with 120 labelled windows, leaving little room for pretraining to help. SSL was ahead at 1% in all three seeds, but with three seeds and overlapping error bars we call that a hint. The encoder was pretrained once, and the validation set (340 windows) chose the best epoch even in low-label runs, which is slightly optimistic.</div>
+</section>
+
+<section id="files"><h2>Files and what each one does</h2>
+<div class="table"><table><tr><th>File</th><th>Job</th></tr>
+<tr><td><code>preprocessing/har_data.py</code></td><td>Loads the CSVs, normalizes with training statistics, builds label subsets and DataLoaders</td></tr>
+<tr><td><code>models/cnn1d.py</code></td><td>The 1D CNN, split into an encoder and a classifier so pretraining can reuse the encoder</td></tr>
+<tr><td><code>training/train_eval.py</code></td><td>Training loop, metrics, confusion matrix and learning-curve plots</td></tr>
+<tr><td><code>scripts/inspect_*.py, phase1_demo.py</code></td><td>Checks on structure, labels, user leakage and shapes</td></tr>
+<tr><td><code>scripts/run_rf_baseline.py, run_cnn_baseline.py</code></td><td>The two baselines</td></tr>
+<tr><td><code>scripts/run_ssl_expirement.py</code></td><td>SimCLR pretraining and the label-efficiency study</td></tr>
+<tr><td><code>scripts/train_final_model.py</code></td><td>Trains and saves the model used live</td></tr>
+<tr><td><code>live/live_preprocess.py</code></td><td>Phone-to-dataset conversion, resampling, prediction</td></tr>
+<tr><td><code>live/server.py, dashboard.html</code></td><td>Flask server and the browser display</td></tr>
+<tr><td><code>live/replay_test.py</code></td><td>Streams real test windows through the live server</td></tr></table></div>
+</section>
+
+<section id="live">
+<h2>The live prototype</h2>
+<div class="flow"><span>Phone (held in hand)</span><i>&rarr;</i><span>Wi-Fi</span><i>&rarr;</i><span>Flask server</span><i>&rarr;</i><span>Sliding buffer</span><i>&rarr;</i><span>Same preprocessing</span><i>&rarr;</i><span>Model</span><i>&rarr;</i><span>Dashboard</span></div>
+<p>The server keeps recent samples, resamples them to the training rate, normalizes them exactly as in training, and predicts about every half second, smoothing over the last three predictions.</p>
+<h3>Proving the pipeline before using a phone</h3>
+<p>The replay test streams real test windows through the same server. Its accuracy should match the offline accuracy, and it does. It is a simulation (recorded data, not a phone) and is labelled as one. It skips the phone unit and axis conversion, which only the real phone can test. <span class="tag">Verified</span>Replay accuracy 0.9391 on all 690 test windows, identical to the offline 0.9391, with no missing predictions.</p>
+<div class="note"><b>Why a hand-held phone changes things.</b> The training phone was worn at the waist. A phone in the hand swings with the arm and is held at a varying angle, so we expect lower accuracy than offline, especially for sitting versus standing and for the stair classes. The axis and unit mapping must be calibrated on the real phone. For the demo the phone is held in one fixed pose. Other placements, and fine-tuning on a small set of our own hand-held recordings, are planned next.</div>
+<pre>python scripts/train_final_model.py
+python live/server.py            # open http://localhost:5000
+python live/replay_test.py       # second terminal
+python live/replay_test.py --demo</pre>
+</section>
+
+<section id="limits"><h2>Limits and next version</h2>
+<ul>
+<li>One dataset, five classes, waist-mounted recordings.</li>
+<li>Sampling rate and class names still to confirm.</li>
+<li>Limited SSL evidence: one pretraining run, three fine-tuning seeds.</li>
+<li>Real-phone hand-held accuracy has not been measured yet.</li>
+</ul>
+<p><b>Next version:</b> other placements (pocket, bag, wrist-worn), a second dataset with running, more SSL methods and encoders, 10 or more seeds with statistical tests, and a small set of our own recordings for fine-tuning.</p>
+</section>
+</main>
+<footer><div class="wrap">Smartphone-HAR, final-year project. Data: DAGHAR / UCI HAR. <a href="https://github.com/kalpeshdahite/SmartPhone-HAR">Source code on GitHub</a>. Every result on this page comes from our own experiments.</div></footer>
+
+<script>
+const phases=[
+["Phase 0: Environment","Make sure the tools work before writing any model code.","Python 3.12 virtual environment with PyTorch (CUDA on an RTX 3050), NumPy, Pandas, scikit-learn, Matplotlib. A check script prints versions and runs a test tensor.","scripts/check_env.py","GPU detected, tensor test passed."],
+["Phase 1: Dataset","Understand the data before trusting any number.","Inspected the CSV structure, found the 6 sensor channels, labels and user IDs. Checked that no user or recording is shared between splits. Computed normalization statistics from training data only. Built the Dataset/DataLoader and label-fraction subsets (100%, 10%, 5%, 1%).","preprocessing/har_data.py, scripts/inspect_*.py, phase1_demo.py","6 x 150 windows, 5 balanced classes, clean user-independent split, normalized mean 0 and std 1 on training data."],
+["Phase 2: Baselines","Get honest reference numbers.","A Random Forest on 64 handcrafted statistics (mean, std, min, max and more per channel) and a small 1D CNN on the raw windows, both through one shared evaluation code path.","models/cnn1d.py, training/train_eval.py, scripts/run_*_baseline.py","Random Forest 88.99%, CNN 93.62% test accuracy."],
+["Phase 3: Self-supervised learning","Learn from unlabelled signals.","SimCLR-style contrastive learning. Each window is augmented twice (noise, per-channel scaling, circular time shift). The two versions of the same window are a positive pair; the other windows in the batch are negatives. The NT-Xent loss pulls positives together and pushes negatives apart. No activity labels are used. We chose it because it is simple, works on raw windows, and is easy to explain.","scripts/run_ssl_expirement.py","Pretraining loss fell from 4.89 to 4.26 over 100 epochs."],
+["Phase 4: Fine-tuning and label efficiency","Ask the research question.","Attach a classifier to the pretrained encoder and train with 100%, 10%, 5% and 1% of the labels, against the same CNN trained from scratch, with 3 seeds each.","scripts/run_ssl_expirement.py, results/tables/*","SSL did not help at 5% to 100% labels; ahead at 1% in all 3 seeds (suggestive)."],
+["Phase 5: Model comparison","Compare simple and deep models.","Compared accuracy, F1, parameters and inference time for the Random Forest and CNN. More models (GRU, ResNet-1D) are kept for the next version.","results/metrics/*","CNN is more accurate and faster per window."],
+["Phase 6: Live pipeline","Run the same model on streamed data.","Server with a sliding buffer, the same normalization as training, and a replay test that feeds real test windows through it.","live/*, scripts/train_final_model.py","Replay accuracy 0.9391 on 690 test windows, identical to offline 0.9391."],
+["Phase 7: Phone in hand","Close the loop with a real device.","Stream the phone's accelerometer and gyroscope to the server, calibrate units and axes, and demonstrate the live prediction.","live/*","In progress."]];
+const pl=document.getElementById('phaselist');
+phases.forEach(p=>{const d=document.createElement('div');d.className='phase';
+d.innerHTML='<h3></h3><dl><dt>Goal</dt><dd></dd><dt>What we did</dt><dd></dd><dt>Files</dt><dd><code></code></dd><dt>Outcome</dt><dd></dd></dl>';
+d.querySelector('h3').textContent=p[0];const dd=d.querySelectorAll('dd');dd[0].textContent=p[1];dd[1].textContent=p[2];dd[2].firstChild.textContent=p[3];dd[3].textContent=p[4];pl.appendChild(d);});
+const data=[["1%",.760,.802],["5%",.927,.914],["10%",.926,.913],["100%",.934,.922]];
+const bars=document.getElementById('bars');
+data.forEach(r=>{[["CNN scratch",r[1],'var(--a)'],["SSL + CNN",r[2],'var(--b)']].forEach((x,i)=>{
+const row=document.createElement('div');row.className='brow';
+row.innerHTML='<span></span><div class="track"><div class="fill"></div></div>';
+row.firstChild.textContent=(i==0?r[0]+' labels: ':'')+x[0];
+const f=row.querySelector('.fill');f.style.width=((x[1]-.5)/.5*100)+'%';f.style.background=x[2];f.textContent=(x[1]*100).toFixed(1)+'%';bars.appendChild(row);});});
+const svg=document.getElementById('sig'),cols=['var(--a)','var(--a)','var(--a)','var(--b)','var(--b)','var(--b)'];
+cols.forEach((c,k)=>{let pts=[];for(let x=0;x<=800;x+=4){const t=x/800*Math.PI*9;
+const y=25*k+14+8*Math.sin(t+k)+4*Math.sin(2.7*t+k*2)+ (x>560?-6*Math.sin(t*.4):0);pts.push(x+','+y.toFixed(1));}
+const p=document.createElementNS('http://www.w3.org/2000/svg','polyline');p.setAttribute('points',pts.join(' '));p.setAttribute('fill','none');p.setAttribute('stroke',c);p.setAttribute('stroke-width','1.6');p.setAttribute('opacity',k<3?'1':'.85');svg.appendChild(p);});
+document.getElementById('theme').onclick=()=>{const r=document.documentElement,d=getComputedStyle(r).getPropertyValue('--bg').trim()==='#0f1c20';r.setAttribute('data-theme',d?'light':'dark');};
+</script></body></html>
