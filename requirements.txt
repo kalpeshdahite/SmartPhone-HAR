@@ -6,3 +6,4 @@ torch
 tqdm
 jupyter
 ipykernel
+flask
