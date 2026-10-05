@@ -14,18 +14,11 @@ env/
 # VS Code
 .vscode/
 
-# Data
-data/raw/*
-data/processed/*
-data/splits/*
-
 # Generated results
-results/checkpoints/
 results/tmp/
 
 # Model checkpoints
 *.pth
-*.pt
 *.ckpt
 
 # Logs
